@@ -1,0 +1,376 @@
+/*
+TechnowBrasil - Single-file React + Tailwind template
+Usage:
+- This is a single-file React component (App.jsx) intended to be placed in a React project
+  that already has Tailwind CSS configured (e.g., created with Vite + React or Create React App
+  with Tailwind).
+- Save as src/App.jsx, ensure Tailwind is active (postcss + tailwind.config.js).
+- No external UI libraries are required. Icons use simple SVGs inline.
+- Recommended extras: react-router for multi-page routes, a headless CMS (Strapi/Contentful),
+  and analytic/ad scripts for monetization (Google Analytics, AdSense).
+
+What this file includes:
+- Responsive modern layout with header, hero, category filters, article grid, article reader modal/page,
+  search, newsletter signup, comments placeholder, share buttons, admin stub, and SEO meta.
+- Accessibility-aware markup, sample local data and placeholders to wire up to a backend.
+- Easily extensible components: ArticleCard, CategoryPill, Header, Footer, SearchBar, Newsletter, AdminPanel.
+
+How to extend:
+- Replace SAMPLE_DATA with API calls to your backend or headless CMS.
+- Add react-router for separate article pages (this file uses an internal view state for simplicity).
+- To monetize: add AdSense scripts in public/index.html and add <ins> ad containers in Article pages.
+
+Author: Paulo (TechnowBrasil starter template)
+*/
+
+import React, { useState, useMemo } from 'react';
+
+// ---------- SAMPLE DATA (replace with API/backend) ----------
+const SAMPLE_ARTICLES = [
+  {
+    id: 'a1',
+    title: 'Novo processador XYZ promete 50% mais desempenho',
+    excerpt: 'O fabricante anunciou hoje uma nova linha de chips voltada para notebooks finos...',
+    category: 'Tecnologia',
+    cover: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&q=80',
+    date: '2025-09-10',
+    author: 'Mariana Lima',
+    content: '<p>O novo processador XYZ chega ao mercado com uma microarquitetura renovada...</p>'
+  },
+  {
+    id: 'a2',
+    title: 'Campeonato regional tem final emocionante',
+    excerpt: 'Torcedores lotaram o estádio para ver uma virada histórica no segundo tempo...',
+    category: 'Esportes',
+    cover: 'https://images.unsplash.com/photo-1521412644187-c49fa049e84d?w=1200&q=80',
+    date: '2025-09-12',
+    author: 'Carlos Pereira',
+    content: '<p>Em uma partida que ficará marcada na memória, o time visitante...</p>'
+  },
+  {
+    id: 'a3',
+    title: 'Festival de verão anuncia line-up com bandas nacionais',
+    excerpt: 'A edição deste ano do festival trará atrações para todas as idades...',
+    category: 'Eventos',
+    cover: 'https://images.unsplash.com/photo-1506152983158-b4e9b0445b69?w=1200&q=80',
+    date: '2025-08-30',
+    author: 'Laura Santos',
+    content: '<p>Os organizadores confirmaram 30 bandas e espaços de food-trucks...</p>'
+  },
+  // more sample articles...
+];
+
+const CATEGORIES = ['Todas', 'Tecnologia', 'Esportes', 'Eventos'];
+
+// ----------------- UI Components -----------------
+function IconLogo() {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-sky-300 rounded-lg flex items-center justify-center shadow-md">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12h18" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+          <path d="M8 6h8" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+        </svg>
+      </div>
+      <div className="leading-tight">
+        <div className="font-extrabold text-lg">TechNowBrasil</div>
+        <div className="text-xs -mt-1 text-slate-500">Notícias • Esportes • Eventos</div>
+      </div>
+    </div>
+  );
+}
+
+function Header({ onToggleMenu, onOpenAdmin }) {
+  return (
+    <header className="sticky top-0 z-30 backdrop-blur bg-white/60 border-b border-slate-200">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-6">
+          <IconLogo />
+          <nav className="hidden md:flex gap-4 items-center">
+            {CATEGORIES.slice(1).map((c) => (
+              <a key={c} className="text-sm font-medium text-slate-700 hover:text-slate-900" href="#">{c}</a>
+            ))}
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button className="hidden md:inline-flex items-center px-4 py-2 border rounded-lg text-sm font-medium hover:shadow" onClick={onOpenAdmin}>Painel</button>
+          <button className="p-2 md:hidden" onClick={onToggleMenu} aria-label="Abrir menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 6h18M3 12h18M3 18h18" stroke="#374151" strokeWidth="2" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function Hero({ onSearch }) {
+  return (
+    <section className="bg-gradient-to-r from-white to-slate-50 py-10">
+      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div className="md:col-span-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold leading-tight">TechNowBrasil — Notícias que conectam tecnologia, esportes e eventos</h1>
+          <p className="mt-3 text-slate-600">Cobertura rápida, linguagem direta e conteúdo local e nacional para você se manter informado.</p>
+
+          <div className="mt-6 flex gap-3">
+            <input
+              aria-label="Pesquisar notícias"
+              onKeyDown={(e) => { if (e.key === 'Enter') onSearch(e.target.value); }}
+              placeholder="Pesquise por título, autor ou tema..."
+              className="flex-1 px-4 py-3 border rounded-lg shadow-sm focus:outline-none focus:ring"
+            />
+            <button className="px-4 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700" onClick={() => onSearch('')}>Buscar</button>
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            {['Últimas', 'Mais Lidas', 'Editorias', 'Ao Vivo'].map((t) => (
+              <span key={t} className="px-3 py-1 text-sm bg-slate-100 rounded-full text-slate-700">#{t}</span>
+            ))}
+          </div>
+        </div>
+
+        <div className="hidden md:block">
+          <div className="rounded-xl overflow-hidden shadow-lg border">
+            <img src={SAMPLE_ARTICLES[0].cover} alt="Capa destaque" className="w-full h-56 object-cover" />
+            <div className="p-4 bg-white">
+              <div className="text-xs text-slate-500">{SAMPLE_ARTICLES[0].category} • {SAMPLE_ARTICLES[0].date}</div>
+              <div className="font-semibold mt-1">{SAMPLE_ARTICLES[0].title}</div>
+              <p className="text-sm mt-2 text-slate-600">{SAMPLE_ARTICLES[0].excerpt}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function CategoryPill({ label, selected, onClick }) {
+  return (
+    <button onClick={() => onClick(label)} className={`px-3 py-1 rounded-full text-sm font-medium ${selected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700'}`}>
+      {label}
+    </button>
+  );
+}
+
+function ArticleCard({ item, onOpen }) {
+  return (
+    <article className="bg-white rounded-2xl overflow-hidden shadow-sm border hover:shadow-md transition">
+      <div className="h-48 md:h-44 lg:h-52 overflow-hidden">
+        <img src={item.cover} alt={item.title} className="w-full h-full object-cover" />
+      </div>
+      <div className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-slate-500">{item.category} • {item.date}</div>
+        </div>
+        <h3 className="mt-2 font-semibold text-lg">{item.title}</h3>
+        <p className="mt-2 text-slate-600 text-sm">{item.excerpt}</p>
+        <div className="mt-4 flex items-center justify-between">
+          <button onClick={() => onOpen(item)} className="text-indigo-600 font-medium">Ler</button>
+          <div className="text-xs text-slate-400">Por {item.author}</div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function Newsletter() {
+  return (
+    <div className="bg-gradient-to-r from-slate-50 to-white rounded-2xl p-6 border shadow-sm">
+      <h4 className="font-semibold">Receba as notícias no seu e-mail</h4>
+      <p className="text-sm text-slate-600 mt-2">Resumo diário com os principais destaques direto na sua caixa de entrada.</p>
+      <form className="mt-4 flex gap-2" onSubmit={(e) => { e.preventDefault(); alert('Obrigado! Cadastro simulado. Integre com sua lista de e-mails.'); }}>
+        <input aria-label="Seu e-mail" placeholder="seu@email.com" className="flex-1 px-3 py-2 border rounded-lg" />
+        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg">Assinar</button>
+      </form>
+    </div>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="mt-12 border-t bg-white/50 border-slate-200">
+      <div className="max-w-6xl mx-auto px-4 py-8 flex flex-col md:flex-row justify-between items-start gap-6">
+        <div>
+          <IconLogo />
+          <p className="mt-3 text-sm text-slate-600 max-w-md">TechNowBrasil é um portal independente de notícias sobre tecnologia, esportes e eventos.</p>
+        </div>
+        <div className="flex gap-8">
+          <div>
+            <div className="font-semibold">Seções</div>
+            <ul className="mt-2 text-sm text-slate-600">
+              <li>Tecnologia</li>
+              <li>Esportes</li>
+              <li>Eventos</li>
+            </ul>
+          </div>
+          <div>
+            <div className="font-semibold">Contato</div>
+            <div className="mt-2 text-sm text-slate-600">contato@technowbrasil.com.br</div>
+          </div>
+        </div>
+      </div>
+      <div className="text-center text-xs text-slate-500 pb-6">© {new Date().getFullYear()} TechNowBrasil • Todos os direitos reservados</div>
+    </footer>
+  );
+}
+
+// ------------- Main App -------------
+export default function App() {
+  const [query, setQuery] = useState('');
+  const [category, setCategory] = useState('Todas');
+  const [openArticle, setOpenArticle] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return SAMPLE_ARTICLES.filter(a =>
+      (category === 'Todas' || a.category === category) &&
+      (q === '' || a.title.toLowerCase().includes(q) || a.excerpt.toLowerCase().includes(q) || a.author.toLowerCase().includes(q))
+    );
+  }, [query, category]);
+
+  function openArticleView(article) {
+    setOpenArticle(article);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800">
+      <Header onToggleMenu={() => setMenuOpen(!menuOpen)} onOpenAdmin={() => setAdminOpen(true)} />
+
+      {menuOpen && (
+        <div className="md:hidden p-4 border-b bg-white">
+          <div className="flex gap-2 overflow-x-auto">
+            {CATEGORIES.map(c => (
+              <CategoryPill key={c} label={c} selected={c === category} onClick={(l) => { setCategory(l); setMenuOpen(false); }} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-6xl mx-auto px-4">
+        <Hero onSearch={(val) => setQuery(val)} />
+
+        <section className="mt-8">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2 items-center">
+              {CATEGORIES.map((c) => (
+                <CategoryPill key={c} label={c} selected={c === category} onClick={(l) => setCategory(l)} />
+              ))}
+            </div>
+
+            <div className="text-sm text-slate-500">{filtered.length} resultado(s)</div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+            <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {filtered.map(item => (
+                <ArticleCard key={item.id} item={item} onOpen={openArticleView} />
+              ))}
+
+              {filtered.length === 0 && (
+                <div className="p-6 bg-white rounded-2xl border text-center text-slate-600">Nenhum resultado encontrado. Tente outra busca.</div>
+              )}
+            </div>
+
+            <aside className="hidden md:block">
+              <Newsletter />
+
+              <div className="mt-6 bg-white rounded-2xl p-4 border shadow-sm">
+                <h4 className="font-semibold">Últimas</h4>
+                <ul className="mt-3 text-sm text-slate-600 space-y-3">
+                  {SAMPLE_ARTICLES.slice(0, 4).map(a => (
+                    <li key={a.id} className="cursor-pointer hover:text-indigo-600" onClick={() => openArticleView(a)}>{a.title}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mt-6 bg-white rounded-2xl p-4 border shadow-sm">
+                <h4 className="font-semibold">Tags populares</h4>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {['Inovação','Campeonato','Festival','Lançamento'].map(t => (
+                    <span key={t} className="text-sm px-3 py-1 bg-slate-100 rounded-full">{t}</span>
+                  ))}
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        {/* Article reader modal / page */}
+        {openArticle && (
+          <div className="fixed inset-0 z-50 overflow-auto bg-black/40 p-6 flex justify-center">
+            <div className="bg-white rounded-2xl max-w-4xl w-full shadow-lg">
+              <div className="flex items-start justify-between p-4 border-b">
+                <div>
+                  <div className="text-xs text-slate-500">{openArticle.category} • {openArticle.date}</div>
+                  <h2 className="text-2xl font-bold">{openArticle.title}</h2>
+                  <div className="text-sm text-slate-500 mt-1">Por {openArticle.author}</div>
+                </div>
+                <div className="flex gap-2">
+                  <button className="px-3 py-1 text-sm border rounded-lg" onClick={() => { navigator.clipboard.writeText(window.location.href); alert('Link copiado (simulado)'); }}>Copiar link</button>
+                  <button className="px-3 py-1 text-sm border rounded-lg" onClick={() => setOpenArticle(null)}>Fechar</button>
+                </div>
+              </div>
+
+              <div className="p-4 space-y-4">
+                <img src={openArticle.cover} alt="cover" className="w-full h-60 object-cover rounded-lg" />
+                <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: openArticle.content }} />
+
+                {/* Placeholder for ads */}
+                <div className="border rounded-lg p-4 text-center text-slate-500">[Espaço para anúncio — insira AdSense/Anúncio nativo aqui]</div>
+
+                {/* Sharing buttons */}
+                <div className="flex gap-3 items-center">
+                  <span className="text-sm text-slate-500">Compartilhar:</span>
+                  <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noreferrer" className="text-sm underline">Facebook</a>
+                  <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(openArticle.title)}&url=${encodeURIComponent(window.location.href)}`} target="_blank" rel="noreferrer" className="text-sm underline">Twitter</a>
+                </div>
+
+                {/* Comments placeholder — integrate Disqus or other system here */}
+                <div className="mt-4">
+                  <h4 className="font-semibold">Comentários</h4>
+                  <div className="mt-3 text-sm text-slate-600">Integre um sistema como Disqus, Facebook Comments ou um backend próprio aqui.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Admin panel modal (simulated) */}
+        {adminOpen && (
+          <div className="fixed inset-0 z-40 bg-black/30 p-6 flex justify-center items-start overflow-auto">
+            <div className="bg-white rounded-2xl max-w-3xl w-full mt-10 shadow-lg">
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="font-bold">Painel Administrativo (Simulado)</h3>
+                <button className="px-3 py-1 border rounded-lg" onClick={() => setAdminOpen(false)}>Fechar</button>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <div className="font-semibold">Criar Post</div>
+                    <p className="text-sm text-slate-600 mt-2">Formulário simples para criar um artigo — substitua por integração com CMS.</p>
+                    <button className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg" onClick={() => alert('Funcionalidade de criação simulada — integre com backend')}>Criar (simulado)</button>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <div className="font-semibold">Gerenciar Anúncios</div>
+                    <p className="text-sm text-slate-600 mt-2">Adicione códigos do Google AdSense ou gerenciador de anúncios aqui.</p>
+                  </div>
+                </div>
+
+                <div className="p-4 border rounded-lg">
+                  <div className="font-semibold">Usuários</div>
+                  <p className="text-sm text-slate-600 mt-2">Lista de usuários, permissões e comentários — substitua por API real.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <Footer />
+      </main>
+    </div>
+  );
+}
